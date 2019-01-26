@@ -8,7 +8,7 @@ import cv2
 import subprocess
 
 
-MQTT_SERVER = '136.60.227.124'
+MQTT_SERVER = '<<ADD YOUR IP>>'
 MQTT_PATH = 'test_img'
 
 # make json serilizable and passable through mqtt - make a byte array passable
