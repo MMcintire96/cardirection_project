@@ -2,7 +2,7 @@ import paho.mqtt.client as mqtt
 #import classifier
 
 
-MQTT_SERVER = '136.60.227.124'
+MQTT_SERVER = '<<ADD YOUR IP>>'
 MQTT_PATH = 'test_img'
 
 def on_connect(client, userdata, flags, rc):
