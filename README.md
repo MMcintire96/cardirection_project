@@ -14,6 +14,6 @@ Computer:
 
 
 
- Make sure your model is trained, I am not uploading the training data because its large
+ Make sure your model is trained, I am not uploading the training data because its large, but the output_graph is there from my car classifier
  
  
