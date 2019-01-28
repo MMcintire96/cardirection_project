@@ -8,9 +8,19 @@ import cv2
 import subprocess
 
 
-MQTT_SERVER = '136.60.227.124'
+MQTT_SERVER = '<<ADD YOUR IP>>'
+MQTT_PATH = 'test_img'
 
-
+# make json serilizable and passable through mqtt - make a byte array passable
+def to_json(python_object):
+    if isinstance(python_object, time.struct_time):
+        return {'__class__': 'time.asctime',
+                '__value__': time.asctime(python_object)}
+    if isinstance(python_object, bytes):
+        return {'__class__': 'bytes',
+                '__value__': list(python_object)}
+        raise TypeError(repr(python_object) + ' is not JSON Serializable')
+>>>>>>> a5ae7a5cd87ac88592f669055db2ca6ca552f9ac
 
 # this fails if camera is moved from original capture point, or if lighting changes
 def captureFirst():

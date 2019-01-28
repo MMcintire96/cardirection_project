@@ -4,7 +4,9 @@ import paho.mqtt.client as mqtt
 import sqlite3
 import json
 
-MQTT_SERVER = '136.60.227.124'
+MQTT_SERVER = '<<ADD YOUR IP>>'
+
+
 
 
 def add_to_db(output_obj):
