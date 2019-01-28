@@ -12,8 +12,11 @@ Computer:
   
   python classifier.py
 
-
+You can also run 'mse_graph' while its running for a live graph of mse & err vs count
 
  Make sure your model is trained, I am not uploading the training data because its large, but the output_graph is there from my car classifier
  
- 
+#TODO
+1. Store MSE/err in db
+2. Average the values from the graph for the length of the motion detection signal
+3. Save all frames from motion detection?
