@@ -1,23 +1,30 @@
 import paho.mqtt.client as mqtt
-import classifier
-
 
 MQTT_SERVER = '136.60.227.124'
-MQTT_PATH = 'test_img'
+MQTT_PATH = 'test_err'
 
 
 def on_connect(client, userdata, flags, rc):
     print("Connect" + str(rc))
     client.subscribe(MQTT_PATH)
+    client.subscribe('test_mse')
 
 
 def on_message(client, userdata, msg):
     print("Topic : ", msg.topic)
-    print(msg.payload)
-    f = open("mqtt_img/output.jpg", "wb")
-    f.write(msg.payload)
-    f.close()
-    classifier.analyzie(msg.payload)
+    if msg.topic == 'test_err':
+        err = str(msg.payload)
+        err = err.replace("b'", "").replace("'", "")
+        f = open('testerr.txt', 'a')
+        print(err, file=f)
+    elif msg.topic == 'test_mse':
+        err = str(msg.payload)
+        err = err.replace("b'", "").replace("'", "")
+        f = open('testmse.txt', 'a')
+        print(err, file=f)
+
+
+
 
 client = mqtt.Client()
 client.on_connect = on_connect

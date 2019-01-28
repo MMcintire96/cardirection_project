@@ -5,8 +5,6 @@ import sqlite3
 import json
 
 MQTT_SERVER = '136.60.227.124'
-MQTT_PATH = 'test_img'
-
 
 
 def add_to_db(output_obj):
@@ -86,19 +84,33 @@ def make_prediction(normalized, lotid):
 
 def on_connect(client, userdata, flags, rc):
         print("Connected : " + str(rc))
-        client.subscribe(MQTT_PATH)
-
+        client.subscribe('test_lot')
+        client.subscribe('test_img')
+        client.subscribe('test_err')
+        client.subscribe('test_mse')
 
 def on_message(client, userdata, msg):
         print("Message_Topic : ", msg.topic)
-        # write the bytes to img
-        # convert bytes to string to json
-        msg_obj = json.loads(msg.payload)
-        img = bytes(msg_obj['img']['__value__'])
-        lot_id = msg_obj['lot_id']
-        f = open("mqtt_img/output.jpg", "wb")
-        f.write(img)
-        f.close()
+        # this might fail on multiple lots
+        if msg.topic == 'test_img':
+            img = msg.payload
+            f = open("mqtt_img/output.jpg", "wb")
+            f.write(img)
+            f.close()
+        elif msg.topic == 'test_lot':
+            lot_id = msg.payload
+            #lot_id = lot_id.replace("b", "")
+        elif msg.topic == 'test_err':
+            err = str(msg.payload)
+            err = err.replace("b'", "").replace("'", "")
+            f_err = open('testerr.txt', 'a')
+            print(err, file=f_err)
+        elif msg.topic == 'test_mse':
+            mse = str(msg.payload)
+            mse = mse.replace("b'", "").replace("'", "")
+            f_mse = open('testmse.txt', 'a')
+            print(mse, file=f_mse)
+
         img_to_tensor(lot_id)
 
 
