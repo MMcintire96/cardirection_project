@@ -6,7 +6,7 @@ import numpy as np
 import cv2
 
 
-MQTT_SERVER = '136.60.227.124'
+MQTT_SERVER = ''
 
 
 def captureFirst():
