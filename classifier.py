@@ -5,7 +5,7 @@ import numpy as np
 import paho.mqtt.client as mqtt
 import tensorflow as tf
 
-MQTT_SERVER = '136.60.227.124'
+MQTT_SERVER = ''
 
 
 def add_to_db(output_obj):
