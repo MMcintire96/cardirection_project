@@ -1,12 +1,11 @@
-import numpy as np
-import tensorflow as tf
-import paho.mqtt.client as mqtt
-import sqlite3
 import json
+import sqlite3
 
-MQTT_SERVER = '<<ADD YOUR IP>>'
+import numpy as np
+import paho.mqtt.client as mqtt
+import tensorflow as tf
 
-
+MQTT_SERVER = '136.60.227.124'
 
 
 def add_to_db(output_obj):
@@ -16,19 +15,23 @@ def add_to_db(output_obj):
         car_right = output_obj['car_right']
         no_car = output_obj['no_car']
         lot_id = output_obj['lot_id']
+        err = output_obj['err']
+        mse = output_obj['mse']
         # this should be modified to insert car + or car - values to the lot_id
         if car_left > .5:
-                print('car has entered the lot')
+                print('car has entered the lot \n')
         if car_right > .5:
-                print('car has left the lot')
+                print('car has left the lot \n')
         if no_car > .5:
-                print('That was not a car')
-        c.execute("INSERT INTO location (car_left, car_right, no_car, lot_id) values (?,?,?,?)", (str(car_left), str(car_right), str(no_car), lot_id))
+                print('That was not a car \n')
+        c.execute("""INSERT INTO location (car_left, car_right, no_car, lot_id, err, mse)
+                    values (?,?,?,?,?,?)
+                    """, (str(car_left), str(car_right), str(no_car), lot_id, err, mse))
         conn.commit()
         conn.close()
 
 
-def img_to_tensor(lotid):
+def img_to_tensor(lot_id, err, mse):
 
         # tf read file
         img_path = 'mqtt_img/output.jpg'
@@ -45,10 +48,10 @@ def img_to_tensor(lotid):
         resized = tf.image.resize_bilinear(dims_expander, [299, 299])
         normalized = tf.divide(tf.subtract(resized, [0]), [255])
 
-        make_prediction(normalized, lotid)
+        make_prediction(normalized, lot_id, err, mse)
 
 
-def make_prediction(normalized, lotid):
+def make_prediction(normalized, lot_id, err, mse):
 
         with open('model_outputs/output_labels.txt', 'r') as label_file:
                 labels = [line.strip('\n') for line in label_file]
@@ -60,8 +63,6 @@ def make_prediction(normalized, lotid):
         _ = tf.import_graph_def(graph_def, name='')
 
         with tf.Session() as sess:
-                # convert the normalized arr to 4-d np.array[batch_size, height, width, channel]
-                # maybe do this in img_to_tensor()?
                 img = sess.run(normalized)
                 softmax_tensor = sess.graph.get_tensor_by_name(
                                                                'final_result:0')
@@ -79,46 +80,37 @@ def make_prediction(normalized, lotid):
                     'car_left': predictions[0][0],
                     'car_right': predictions[0][1],
                     'no_car': predictions[0][2],
-                    'lot_id': lotid
+                    'lot_id': lot_id,
+                    'err': err,
+                    'mse': mse,
                 }
                 add_to_db(output_obj)
 
 
 def on_connect(client, userdata, flags, rc):
         print("Connected : " + str(rc))
-        client.subscribe('test_lot')
-        client.subscribe('test_img')
-        client.subscribe('test_err')
-        client.subscribe('test_mse')
+        client.subscribe('full_img')
+        client.subscribe('full_send')
+
 
 def on_message(client, userdata, msg):
-        print("Message_Topic : ", msg.topic)
         # this might fail on multiple lots
-        if msg.topic == 'test_img':
+        if msg.topic == 'full_img':
             img = msg.payload
             f = open("mqtt_img/output.jpg", "wb")
             f.write(img)
             f.close()
-        elif msg.topic == 'test_lot':
-            lot_id = msg.payload
-            #lot_id = lot_id.replace("b", "")
-        elif msg.topic == 'test_err':
-            err = str(msg.payload)
-            err = err.replace("b'", "").replace("'", "")
-            f_err = open('testerr.txt', 'a')
-            print(err, file=f_err)
-        elif msg.topic == 'test_mse':
-            mse = str(msg.payload)
-            mse = mse.replace("b'", "").replace("'", "")
-            f_mse = open('testmse.txt', 'a')
-            print(mse, file=f_mse)
+        if msg.topic == 'full_send':
+            mqtt_list = str(msg.payload)
+            mqtt_list = mqtt_list.split(',')
+            lot_id, err, mse = str(msg.payload).replace("b'", "").replace("'","").split(',')
 
-        img_to_tensor(lot_id)
+        img_to_tensor(lot_id, err, mse)
 
+if __name__ == "__main__":
+    client = mqtt.Client()
+    client.on_connect = on_connect
+    client.on_message = on_message
+    client.connect(MQTT_SERVER, 1883, 60)
 
-client = mqtt.Client()
-client.on_connect = on_connect
-client.on_message = on_message
-client.connect(MQTT_SERVER, 1883, 60)
-
-client.loop_forever()
+    client.loop_forever()

@@ -1,46 +1,38 @@
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+import sqlite3
 import time
 
-def get_err():
-    err = []
-    with open('testerr.txt', 'r') as f:
-        for line in f:
-            line = line.strip('\n')
-            line = float(line)
-            err.append(line)
-    return err
+import matplotlib.animation as animation
+import matplotlib.pyplot as plt
+
+plt.style.use('dark_background')
 
 
-def get_mse():
-    mse = []
-    with open('testmse.txt', 'r') as f_mse:
-        for line in f_mse:
-            line = line.strip('\n')
-            line = float(line)
-            mse.append(line)
-    return mse
+def get_connection():
+    conn = sqlite3.connect('cardata.db')
+    c = conn.cursor()
+    return c
+
+def get_data():
+    c = get_connection()
+    c.execute("SELECT * FROM 'location'")
+    errArr = []
+    mseArr = []
+    for row in c:
+        errArr.append(row[4])
+        mseArr.append(row[5])
+    return errArr, mseArr
+
+
 
 
 fig = plt.figure()
 ax1 = fig.add_subplot(111)
 ax2 = fig.add_subplot(111)
 def refreshGraphData(i):
-    mse = get_mse()
-    err = get_err()
-    if len(err) != len(mse):
-        if len(err) > len(mse):
-            diff = len(err) - len(mse)
-            err.pop(len(err) - diff)
-        else:
-            diff = len(mse) - len(err)
-            mse.pop(len(mse) - diff)
+    errArr, mseArr = get_data()
     ax1.clear()
-    ax1.plot(err, color='red', label='Error')
-    ax2.plot(mse, color='blue', label='MSE')
+    ax1.plot(errArr, label='Error')
+    ax2.plot(mseArr, label='MSE')
     ax1.legend(loc='best')
-ani = animation.FuncAnimation(fig, refreshGraphData, interval=3000)
+ani = animation.FuncAnimation(fig, refreshGraphData, interval=1000)
 plt.show()
-
-
-
