@@ -1,13 +1,17 @@
+import subprocess
 import time
 
 import cv2
 import numpy as np
 import paho.mqtt.publish as publish
-
 from picamera import PiCamera
 from picamera.array import PiRGBArray
 
-MQTT_SERVER = ''
+MQTT_SERVER = '136.60.227.124'
+motion_filter = .005
+
+#starts the mosquitto dameon in the background
+subprocess.call(["mosquitto",  "-d"])
 
 
 def captureFirst():
@@ -18,10 +22,35 @@ def captureFirst():
     return grayStill
 
 
+#load camera - let sleep to init 
+camera = PiCamera()
+camera.resolution = (320, 240)
+camera.framerate = 30
+rawCapture = PiRGBArray(camera, size=(320, 240))
+time.sleep(5)
+grayStill = captureFirst()
+i = 0
+mseArr = []
+
+
 def mse(grayStill, grayFrame):
     mse = np.sum((grayStill.astype("float") - grayFrame.astype("float")) ** 2)
     mse /= float(grayStill.shape[0] * grayStill.shape[1])
     return mse
+
+
+def init_mse_arr(grayFrame):
+    x = mse(grayStill, grayFrame)
+    mseArr.append(x)
+
+
+def frame_arr(image):
+    MSE = mse(grayStill, grayFrame)
+    mseArr.append(MSE)
+    err = mseArr[len(mseArr)-1] - mseArr[0]
+    if len(mseArr) >= i:
+        mseArr.pop(0)
+    return err
 
 
 def pub_message(image, err, MSE):
@@ -34,30 +63,6 @@ def pub_message(image, err, MSE):
     publish.single('full_img', payload=file_content, hostname=MQTT_SERVER)
 
 
-#load camera - let sleep to init 
-camera = PiCamera()
-camera.resolution = (320, 240)
-camera.framerate = 30
-rawCapture = PiRGBArray(camera, size=(320, 240))
-time.sleep(5)
-grayStill = captureFirst()
-
-
-mseArr = []
-def init_mse_arr(grayFrame):
-    x = mse(grayStill, grayFrame)
-    mseArr.append(x)
-
-def frame_arr(image):
-    MSE = mse(grayStill, grayFrame)
-    mseArr.append(MSE)
-    err = mseArr[9] - mseArr[0]
-    if len(mseArr) >= 9:
-        mseArr.pop(0)
-    return err
-
-
-i = 0
 for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
     # cleans each frame 
     rawCapture.truncate()
@@ -72,11 +77,9 @@ for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=
         i += 1
         print("Preparing the video stream with %s frames" %i)
     else:
-        # get dx/dt of motion and post
         err = frame_arr(grayFrame)
-
-        # get MSE to post and action
         MSE = mse(grayStill, grayFrame)
-        if abs(err) > 0.005:
+        print(err)
+        if abs(err) > motion_filter:
             print('Motion detected - publishing to mqtt')
             pub_message(image, err, MSE)

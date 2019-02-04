@@ -23,8 +23,6 @@ def get_data():
     return errArr, mseArr
 
 
-
-
 fig = plt.figure()
 ax1 = fig.add_subplot(111)
 ax2 = fig.add_subplot(111)
