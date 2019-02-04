@@ -7,7 +7,7 @@ import paho.mqtt.publish as publish
 from picamera import PiCamera
 from picamera.array import PiRGBArray
 
-MQTT_SERVER = '136.60.227.124'
+MQTT_SERVER = ''
 motion_filter = .005
 
 #starts the mosquitto dameon in the background
